@@ -11,9 +11,8 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-
+import { isomorphicGetSession } from "./utils/isomorphicGetSession";
 /**
  * 1. CONTEXT
  *
@@ -27,11 +26,14 @@ import { db } from "@/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const session = await auth();
-
+  const headers = opts.headers;
+  const token = headers.get("Authorization") ?? null;
+  console.log(">>> TRPC Request from", headers.get("x-trpc-source"));
+  const session = await isomorphicGetSession(headers);
   return {
     db,
     session,
+    authToken: token,
     ...opts,
   };
 };
@@ -54,6 +56,16 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
           error.cause instanceof ZodError ? error.cause.flatten() : null,
       },
     };
+  },
+  sse: {
+    maxDurationMs: 5 * 60 * 1_000, // 5 minutes
+    ping: {
+      enabled: true,
+      intervalMs: 3_000,
+    },
+    client: {
+      reconnectAfterInactivityMs: 10_000,
+    },
   },
 });
 
@@ -122,7 +134,10 @@ export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {
     if (!ctx.session || !ctx.session.user) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: ">>> Unauthorized <<<",
+      });
     }
     return next({
       ctx: {
