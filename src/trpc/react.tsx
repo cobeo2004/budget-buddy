@@ -21,22 +21,6 @@ export const getQueryClient = () => {
 };
 
 export const api = createTRPCReact<AppRouter>();
-const _proxyApi = async () => {
-  if (typeof window === "undefined") {
-    // Server-side: Return a basic client without auth
-    return createTRPCClient<AppRouter>({
-      links: createTRPCLink(null),
-    });
-  }
-
-  // Client-side: Get cookie and create client
-
-  return createTRPCClient<AppRouter>({
-    links: createTRPCLink(null),
-  });
-};
-
-export const proxyApi = await _proxyApi();
 
 /**
  * Inference helper for inputs.
