@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type InferObjectShapeInArray<T extends Array<any>> =
   T extends Array<infer U>
     ? U extends object

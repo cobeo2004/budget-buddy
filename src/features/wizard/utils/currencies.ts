@@ -1,4 +1,4 @@
-import { InferObjectShapeInArray } from "@/lib/types";
+import { type InferObjectShapeInArray } from "@/lib/types";
 
 export const currencies = [
   {

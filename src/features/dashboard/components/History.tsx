@@ -7,7 +7,7 @@ import { GetFormatterForCurrency } from "../utils/helpers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import HistoryPeriodSelector from "./HistoryPeriodSelector";
-import { api, RouterOutputs } from "@/trpc/react";
+import { api } from "@/trpc/react";
 import { SkeletonWrapper } from "@/features/ui-extensions/components/SkeletonWrapper";
 import {
   Bar,

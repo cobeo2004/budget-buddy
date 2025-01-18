@@ -96,7 +96,7 @@ export const authConfig = {
         id: user.id,
       },
     }),
-    async jwt({ token, user, account }) {
+    async jwt({ token, account }) {
       if (account?.provider === "credentials") {
         token.credentials = true;
       }

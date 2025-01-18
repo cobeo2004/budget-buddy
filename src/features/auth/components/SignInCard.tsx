@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FcGoogle } from "react-icons/fc";
-import { FaDiscord, FaFacebook, FaGithub } from "react-icons/fa";
+import { FaDiscord, FaFacebook } from "react-icons/fa";
 import { DottedSeparator } from "@/features/ui-extensions/components/DottedSeparator";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useState } from "react";

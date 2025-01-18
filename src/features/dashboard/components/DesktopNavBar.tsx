@@ -1,6 +1,4 @@
-import Link from "next/link";
 import React from "react";
-import Image from "next/image";
 import { navItems } from "../utils/navItems";
 import NavbarItem from "./NavbarItem";
 import { ThemeSwitcher } from "@/features/ui-extensions/components/ThemeSwitcher";

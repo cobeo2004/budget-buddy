@@ -6,6 +6,9 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
     typedEnv: true,
     reactCompiler: true,

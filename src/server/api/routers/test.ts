@@ -2,7 +2,7 @@ import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { protectedProcedure } from "../trpc";
 
 export const testRouter = {
-  onSubscribe: protectedProcedure.subscription(async function* ({ ctx }) {
+  onSubscribe: protectedProcedure.subscription(async function* ({}) {
     try {
       while (true) {
         yield {
