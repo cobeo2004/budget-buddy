@@ -9,6 +9,7 @@ import NavbarItem from "./NavbarItem";
 import { navItems } from "../utils/navItems";
 import { ThemeSwitcher } from "@/features/ui-extensions/components/ThemeSwitcher";
 import { UserButton } from "@/features/auth/components/UserButton";
+import Logo from "@/components/logo";
 
 function MobileNavBar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,7 +23,7 @@ function MobileNavBar() {
             </Button>
           </SheetTrigger>
           <SheetContent className="w-[400px] sm:w-[540px]" side="left">
-            <Image src="/logo.svg" alt="logo" width={150} height={150} />
+            <Logo />
             <div className="flex flex-col gap-1 pt-4">
               {navItems.map((val) => (
                 <NavbarItem
@@ -36,7 +37,7 @@ function MobileNavBar() {
           </SheetContent>
         </Sheet>
         <div className="flex h-[80px] min-h-[60px] items-center gap-x-4">
-          <Image src="/logo.svg" alt="logo" width={150} height={150} />
+          <Logo />
         </div>
         <div className="flex items-center gap-2">
           <ThemeSwitcher />
