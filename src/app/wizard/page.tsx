@@ -2,7 +2,6 @@ import Logo from "@/components/logo";
 import { Separator } from "@/components/ui/separator";
 import CardWithCombobox from "@/features/wizard/components/CardWithCombobox";
 import { auth } from "@/server/auth";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import React from "react";
 
