@@ -8,6 +8,7 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { adapter, db } from "@/server/db";
 import { encode as defaultEncode } from "next-auth/jwt";
+import { skipCSRFCheck } from "@auth/core";
 import * as jose from "jose";
 import { v4 as uuid } from "uuid";
 /**
@@ -32,12 +33,16 @@ declare module "next-auth" {
   // }
 }
 
+const isSecureContext = process.env.NODE_ENV !== "development";
+
 /**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
  *
  * @see https://next-auth.js.org/configuration/options
  */
-export const authConfig = {
+
+// @ts-expect-error This is a known issue with NextAuth.js
+export const authConfig: NextAuthConfig = {
   providers: [
     DiscordProvider,
     GoogleProvider,
@@ -87,6 +92,12 @@ export const authConfig = {
      * @see https://next-auth.js.org/providers/github
      */
   ],
+  ...(!isSecureContext
+    ? {
+        skipCSRFCheck: skipCSRFCheck,
+        trustHost: true,
+      }
+    : {}),
   adapter: adapter,
   callbacks: {
     session: ({ session, user }) => ({
@@ -132,7 +143,7 @@ export const authConfig = {
       return defaultEncode(params);
     },
   },
-} satisfies NextAuthConfig;
+};
 
 export const validateToken = async (
   token: string,

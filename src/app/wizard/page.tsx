@@ -1,3 +1,4 @@
+import Logo from "@/components/logo";
 import { Separator } from "@/components/ui/separator";
 import CardWithCombobox from "@/features/wizard/components/CardWithCombobox";
 import { auth } from "@/server/auth";
@@ -29,13 +30,7 @@ async function WizardPage() {
       <Separator />
       <CardWithCombobox />
       <div className="mt-8">
-        <Image
-          src="/logo.svg"
-          alt="wizard"
-          width={300}
-          height={300}
-          className="rounded-lg"
-        />
+        <Logo />
       </div>
     </div>
   );
