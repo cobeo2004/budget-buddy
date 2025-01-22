@@ -126,14 +126,7 @@ function SignInCard() {
           <FcGoogle className="mr-2 size-5" />
           Login with Google
         </Button>
-        <Button
-          variant="secondary"
-          className="w-full"
-          onClick={() => signIn("facebook")}
-        >
-          <FaFacebook className="mr-2 size-5" />
-          Login with Facebook
-        </Button>
+
         <Button
           variant="secondary"
           className="w-full"
