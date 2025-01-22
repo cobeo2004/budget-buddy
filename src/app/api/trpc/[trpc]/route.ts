@@ -4,6 +4,7 @@ import { type NextRequest } from "next/server";
 import { env } from "@/env";
 import { appRouter } from "@/server/api/root";
 import { createTRPCContext } from "@/server/api/trpc";
+import { rateLimitByIp } from "@/lib/limiter";
 
 type NextRuntime = "edge" | "nodejs";
 
@@ -18,8 +19,13 @@ const createContext = async (req: NextRequest) => {
   });
 };
 
-const handler = (req: NextRequest) =>
-  fetchRequestHandler({
+const handler = async (req: NextRequest) => {
+  const { success, error } = await rateLimitByIp(10, 10000);
+  if (!success) {
+    return new Response(error, { status: 429 });
+  }
+
+  return fetchRequestHandler({
     endpoint: "/api/trpc",
     req,
     router: appRouter,
@@ -33,5 +39,6 @@ const handler = (req: NextRequest) =>
           }
         : undefined,
   });
+};
 
 export { handler as GET, handler as POST };

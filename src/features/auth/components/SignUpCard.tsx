@@ -68,7 +68,7 @@ function SignUpCard() {
       )}
     >
       <CardHeader className="flex items-center justify-center p-7 text-center">
-        <CardTitle className="text-2xl">
+        <CardTitle className="text-2xl text-background">
           Sign Up To{" "}
           <span className="bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text font-bold text-transparent">
             BudgetBuddy
@@ -154,7 +154,7 @@ function SignUpCard() {
         <DottedSeparator />
       </div>
       <CardContent className="flex items-center justify-center p-7">
-        <p className="text-center text-sm">
+        <p className="text-center text-sm text-background">
           Already have an account or sign-up via social media?{" "}
           <Link href="/sign-in" className="text-blue-500">
             Sign in
