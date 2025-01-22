@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FcGoogle } from "react-icons/fc";
-import { FaDiscord, FaFacebook } from "react-icons/fa";
+import { FaDiscord } from "react-icons/fa";
 import { DottedSeparator } from "@/features/ui-extensions/components/DottedSeparator";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useState } from "react";
@@ -59,7 +59,7 @@ function SignInCard() {
       )}
     >
       <CardHeader className="flex items-center justify-center p-7 text-center">
-        <CardTitle className="text-2xl text-background">
+        <CardTitle className={cn(theme !== "dark" ? "text-background" : "")}>
           Sign In To{" "}
           <span className="bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text font-bold text-transparent">
             BudgetBuddy
@@ -140,7 +140,7 @@ function SignInCard() {
         <DottedSeparator color={theme === "dark" ? "#fff" : undefined} />
       </div>
       <CardContent className="flex items-center justify-center p-7">
-        <p className="text-background">
+        <p className={cn(theme !== "dark" ? "text-background" : "")}>
           Don&apos;t have an account?{" "}
           <Link href="/sign-up" className="text-blue-500">
             Sign up
