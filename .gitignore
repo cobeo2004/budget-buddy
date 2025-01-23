@@ -47,3 +47,6 @@ yarn-error.log*
 
 # vscode
 .vscode
+
+build.sh
+run.sh

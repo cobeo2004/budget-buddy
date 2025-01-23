@@ -1,11 +1,16 @@
-FROM node:20-slim AS base
+FROM --platform=linux/amd64 node:20-alpine AS base
+
+FROM base as deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY prisma/ /app/prisma/
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN npm ci --legacy-peer-deps
 
 FROM base as builder
 
 WORKDIR /app
-
-COPY package.json package-lock.json* ./
-RUN npm ci --legacy-peer-deps
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -19,8 +24,9 @@ ARG AUTH_GOOGLE_SECRET
 ARG AWS_ENDPOINT
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
-ARG DATABASE_URL
 ARG AUTH_TRUST_HOST
+ARG DATABASE_URL
+ARG NEXT_PUBLIC_CLIENT_VAR
 
 
 RUN npm run build
@@ -50,4 +56,4 @@ ENV PORT=3000
 
 ARG HOSTNAME
 
-CMD node server.js
+CMD ["node", "server.js"]
