@@ -1,6 +1,6 @@
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { protectedProcedure, publicProcedure } from "../trpc";
-import { signUpSchema } from "@/features/auth/utils/schema";
+import { signUpSchema, updateUserSchema } from "@/features/auth/utils/schema";
 import * as jose from "jose";
 import { adapter } from "@/server/db";
 export const authRouter = {
@@ -15,6 +15,15 @@ export const authRouter = {
   getSession: protectedProcedure.query(({ ctx }) => {
     return ctx.session;
   }),
+  updateUser: protectedProcedure
+    .input(updateUserSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { name, email } = input;
+      return await ctx.db.user.update({
+        where: { id: ctx.session?.user?.id },
+        data: { name, email },
+      });
+    }),
   signUp: publicProcedure
     .input(signUpSchema)
     .mutation(async ({ input, ctx }) => {

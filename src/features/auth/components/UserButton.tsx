@@ -56,15 +56,10 @@ export function UserButton() {
             <Pencil className="mr-2 h-4 w-4" />
             <span>Edit user</span>
           </DropdownMenuItem>
-          {process.env.NODE_ENV !== "production" && (
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={handleSignOut}
-            >
-              <LogOut className="mr-2 h-4 w-4 text-red-500" />
-              <span className="text-red-500">Log out</span>
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
+            <LogOut className="mr-2 h-4 w-4 text-red-500" />
+            <span className="text-red-500">Log out</span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <EditUserModal isOpen={isOpen} onClose={handleOpenEditUserModal} />

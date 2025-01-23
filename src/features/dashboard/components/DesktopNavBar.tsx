@@ -8,7 +8,7 @@ import Logo from "@/components/logo";
 function DesktopNavBar() {
   return (
     <div className="hidden border-separate border-b bg-background md:block">
-      <nav className="container flex items-center justify-between px-4">
+      <nav className="container mx-auto flex items-center justify-between px-4">
         <div className="flex h-[80px] min-h-[60px] items-center gap-x-4">
           {/* <Link href="/dashboard">
             <Image src="/logo.svg" alt="logo" width={150} height={150} />
