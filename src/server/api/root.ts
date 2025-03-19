@@ -5,7 +5,6 @@ import { categoriesRouter } from "./routers/categories";
 import { transactionsRouter } from "./routers/transactions";
 import { statsRouter } from "./routers/stats";
 import { testRouter } from "./routers/test";
-
 /**
  * This is the primary router for your server.
  *

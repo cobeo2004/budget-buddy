@@ -59,6 +59,7 @@ model User {
   transactions Transaction[]
   monthHistory MonthHistory[]
   yearHistory  YearHistory[]
+  Notification Notification[]
 }
 
 model VerificationToken {
@@ -131,6 +132,16 @@ model YearHistory {
   expense Float
 
   @@id([userId, month, year])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
 }
 
 // -------------------------------------------------------------------------------------------------

@@ -98,6 +98,7 @@ function SignUpCard() {
                 <FormItem>
                   <FormControl>
                     <Input
+                      className="text-background"
                       type="text"
                       placeholder="Enter your name"
                       {...field}
@@ -116,6 +117,7 @@ function SignUpCard() {
                   <FormControl>
                     <Input
                       type="email"
+                      className="text-background"
                       placeholder="Enter your email"
                       {...field}
                     />
@@ -133,6 +135,7 @@ function SignUpCard() {
                   <FormControl>
                     <Input
                       type="password"
+                      className="text-background"
                       placeholder="Enter your password"
                       {...field}
                     />
@@ -142,7 +145,9 @@ function SignUpCard() {
               )}
             />
             <Button size="lg" className="w-full" disabled={isPending}>
-              {isPending ? "Signing up..." : "Sign Up"}
+              <p className="text-foreground">
+                {isPending ? "Signing up..." : "Sign Up"}
+              </p>
             </Button>
             {signUpError && (
               <p className="text-center text-sm text-red-500">{signUpError}</p>

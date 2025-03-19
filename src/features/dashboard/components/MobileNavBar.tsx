@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
-import Image from "next/image";
 import React, { useState } from "react";
 import NavbarItem from "./NavbarItem";
 import { navItems } from "../utils/navItems";

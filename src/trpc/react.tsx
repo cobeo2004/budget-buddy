@@ -2,7 +2,6 @@
 
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { createTRPCReact } from "@trpc/react-query";
-import { createTRPCClient } from "@trpc/client";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -35,6 +34,8 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
  * @example type HelloOutput = RouterOutputs['example']['hello']
  */
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
+
+export const proxyApi = api.useUtils().client;
 
 export function TRPCReactProvider(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();

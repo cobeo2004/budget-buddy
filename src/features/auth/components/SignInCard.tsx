@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 function SignInCard() {
   const [signInError, setSignInError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { theme } = useTheme();
 
   const router = useRouter();
@@ -37,18 +38,24 @@ function SignInCard() {
   });
 
   const onSubmit = async (data: SignInSchema) => {
-    console.log(data);
-    const res = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
+    try {
+      setIsLoading(true);
+      const res = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
 
-    if (res?.error) {
-      setSignInError("User or password is incorrect");
-      return;
-    } else {
+      if (res?.error) {
+        setSignInError("User or password is incorrect");
+        return;
+      }
+
       router.push("/");
+    } catch (error) {
+      setSignInError("An error occurred during sign in");
+    } finally {
+      setIsLoading(false);
     }
   };
   return (
@@ -80,6 +87,7 @@ function SignInCard() {
                   <FormControl>
                     <Input
                       type="email"
+                      className="text-background"
                       placeholder="Enter your email"
                       {...field}
                     />
@@ -97,6 +105,7 @@ function SignInCard() {
                   <FormControl>
                     <Input
                       type="password"
+                      className="text-background"
                       placeholder="Enter your password"
                       {...field}
                     />
@@ -105,8 +114,10 @@ function SignInCard() {
                 </FormItem>
               )}
             />
-            <Button size="lg" className="w-full">
-              Login
+            <Button size="lg" className="w-full bg-foreground">
+              <p className="text-foreground">
+                {isLoading ? "Loading..." : "Login"}
+              </p>
             </Button>
             {signInError && (
               <p className="text-center text-sm text-red-500">{signInError}</p>

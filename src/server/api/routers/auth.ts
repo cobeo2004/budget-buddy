@@ -2,7 +2,6 @@ import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { protectedProcedure, publicProcedure } from "../trpc";
 import { signUpSchema, updateUserSchema } from "@/features/auth/utils/schema";
 import * as jose from "jose";
-import { adapter } from "@/server/db";
 export const authRouter = {
   ping: publicProcedure.query(() => {
     return {
@@ -55,7 +54,7 @@ export const authRouter = {
           password: hashedPassword,
         },
       });
-      const createdAccount = await adapter?.linkAccount?.({
+      const createdAccount = await ctx.adapter?.linkAccount?.({
         userId: user.id,
         type: "email",
         provider: "credentials",

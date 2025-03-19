@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: budget-tracker-postgres
+    shm_size: 128mb
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: budget-tracker
+    healthcheck:
+      interval: 10s
+      retries: 10
+      test: 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
+      timeout: 2s
+    ports:
+      - "5555:5432"
+    volumes:
+      - postgresql_db:/var/lib/postgresql/data
+
+volumes:
+  postgresql_db:

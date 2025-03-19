@@ -11,8 +11,9 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { db } from "@/server/db";
+import { adapter, db } from "@/server/db";
 import { isomorphicGetSession } from "./utils/isomorphicGetSession";
+import { type TRPCPanelMeta } from "trpc-ui";
 /**
  * 1. CONTEXT
  *
@@ -34,6 +35,7 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
     db,
     session,
     authToken: token,
+    adapter,
     ...opts,
   };
 };
@@ -45,29 +47,32 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
  * ZodErrors so that you get typesafety on the frontend if your procedure fails due to validation
  * errors on the backend.
  */
-const t = initTRPC.context<typeof createTRPCContext>().create({
-  transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
+const t = initTRPC
+  .meta<TRPCPanelMeta>()
+  .context<typeof createTRPCContext>()
+  .create({
+    transformer: superjson,
+    errorFormatter({ shape, error }) {
+      return {
+        ...shape,
+        data: {
+          ...shape.data,
+          zodError:
+            error.cause instanceof ZodError ? error.cause.flatten() : null,
+        },
+      };
+    },
+    sse: {
+      maxDurationMs: 5 * 60 * 1_000, // 5 minutes
+      ping: {
+        enabled: true,
+        intervalMs: 3_000,
       },
-    };
-  },
-  sse: {
-    maxDurationMs: 5 * 60 * 1_000, // 5 minutes
-    ping: {
-      enabled: true,
-      intervalMs: 3_000,
+      client: {
+        reconnectAfterInactivityMs: 10_000,
+      },
     },
-    client: {
-      reconnectAfterInactivityMs: 10_000,
-    },
-  },
-});
+  });
 
 /**
  * Create a server-side caller.
