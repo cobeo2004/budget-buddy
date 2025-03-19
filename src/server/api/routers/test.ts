@@ -1,7 +1,7 @@
-import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { protectedProcedure } from "../trpc";
+import { TRPCError } from "@trpc/server";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-export const testRouter = {
+export const testRouter = createTRPCRouter({
   onSubscribe: protectedProcedure.subscription(async function* () {
     try {
       while (true) {
@@ -22,4 +22,4 @@ export const testRouter = {
       console.log(">>> User has unsubscribed");
     }
   }),
-} satisfies TRPCRouterRecord;
+});

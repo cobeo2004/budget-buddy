@@ -1,10 +1,10 @@
-import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { protectedProcedure } from "../trpc";
+import { TRPCError } from "@trpc/server";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { createTransactionSchema } from "@/features/dashboard/utils/schema";
 import { z } from "zod";
 import { GetFormatterForCurrency } from "@/features/dashboard/utils/helpers";
 
-export const transactionsRouter = {
+export const transactionsRouter = createTRPCRouter({
   createTransaction: protectedProcedure
     .input(createTransactionSchema)
     .mutation(async ({ ctx, input }) => {
@@ -199,4 +199,4 @@ export const transactionsRouter = {
         }),
       ]);
     }),
-} satisfies TRPCRouterRecord;
+});

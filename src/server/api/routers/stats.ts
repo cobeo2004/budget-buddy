@@ -1,5 +1,8 @@
-import { type TRPCRouterRecord } from "@trpc/server";
-import { type createTRPCContext, protectedProcedure } from "../trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  type createTRPCContext,
+} from "../trpc";
 import { z } from "zod";
 import { getDaysInMonth } from "date-fns";
 
@@ -98,7 +101,7 @@ const getMonthHistoryData = async (
   return history;
 };
 
-export const statsRouter = {
+export const statsRouter = createTRPCRouter({
   getOverview: protectedProcedure
     .input(
       z.object({
@@ -196,4 +199,4 @@ export const statsRouter = {
           return;
       }
     }),
-} satisfies TRPCRouterRecord;
+});

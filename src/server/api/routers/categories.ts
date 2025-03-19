@@ -1,9 +1,8 @@
-import { type TRPCRouterRecord } from "@trpc/server";
-import { protectedProcedure } from "../trpc";
+import { protectedProcedure, createTRPCRouter } from "../trpc";
 import { z } from "zod";
 import { createCategorySchema } from "@/features/dashboard/utils/schema";
 
-export const categoriesRouter = {
+export const categoriesRouter = createTRPCRouter({
   getCategories: protectedProcedure
     .input(z.object({ type: z.enum(["expense", "income"]) }))
     .query(async ({ ctx, input }) => {
@@ -47,4 +46,4 @@ export const categoriesRouter = {
         },
       });
     }),
-} satisfies TRPCRouterRecord;
+});

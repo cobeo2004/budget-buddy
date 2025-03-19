@@ -1,8 +1,7 @@
-import { type TRPCRouterRecord } from "@trpc/server";
-import { protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { z } from "zod";
 
-export const userRouter = {
+export const userRouter = createTRPCRouter({
   getUserSettings: protectedProcedure.query(async ({ ctx }) => {
     const user = await ctx.db.userSettings.findFirst({
       where: {
@@ -43,4 +42,4 @@ export const userRouter = {
       },
     });
   }),
-} satisfies TRPCRouterRecord;
+});

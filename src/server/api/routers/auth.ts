@@ -1,8 +1,8 @@
-import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { protectedProcedure, publicProcedure } from "../trpc";
+import { TRPCError } from "@trpc/server";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { signUpSchema, updateUserSchema } from "@/features/auth/utils/schema";
 import * as jose from "jose";
-export const authRouter = {
+export const authRouter = createTRPCRouter({
   ping: publicProcedure.query(() => {
     return {
       message: "pong",
@@ -70,4 +70,4 @@ export const authRouter = {
         createdUser: user,
       };
     }),
-} satisfies TRPCRouterRecord;
+});

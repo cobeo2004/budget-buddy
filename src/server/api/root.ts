@@ -1,10 +1,23 @@
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
-import { authRouter } from "./routers/auth";
-import { userRouter } from "./routers/user";
-import { categoriesRouter } from "./routers/categories";
-import { transactionsRouter } from "./routers/transactions";
-import { statsRouter } from "./routers/stats";
-import { testRouter } from "./routers/test";
+import { experimental_lazy } from "@trpc/server";
+const authRouter = experimental_lazy(
+  async () => (await import("./routers/auth")).authRouter,
+);
+const userRouter = experimental_lazy(
+  async () => (await import("./routers/user")).userRouter,
+);
+const categoriesRouter = experimental_lazy(
+  async () => (await import("./routers/categories")).categoriesRouter,
+);
+const transactionsRouter = experimental_lazy(
+  async () => (await import("./routers/transactions")).transactionsRouter,
+);
+const statsRouter = experimental_lazy(
+  async () => (await import("./routers/stats")).statsRouter,
+);
+const testRouter = experimental_lazy(
+  async () => (await import("./routers/test")).testRouter,
+);
 /**
  * This is the primary router for your server.
  *
