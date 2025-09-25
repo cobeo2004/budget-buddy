@@ -1,9 +1,15 @@
-import { protectedProcedure, createTRPCRouter } from "../trpc";
+import {
+  protectedProcedure,
+  createTRPCRouter,
+  userCacheMiddleware,
+  invalidateUserCache,
+} from "../trpc";
 import { z } from "zod";
 import { createCategorySchema } from "@/features/dashboard/utils/schema";
 
 export const categoriesRouter = createTRPCRouter({
   getCategories: protectedProcedure
+    .use(userCacheMiddleware)
     .input(z.object({ type: z.enum(["expense", "income"]) }))
     .query(async ({ ctx, input }) => {
       const categories = await ctx.db.category.findMany({
@@ -21,12 +27,17 @@ export const categoriesRouter = createTRPCRouter({
   createCategory: protectedProcedure
     .input(createCategorySchema)
     .mutation(async ({ ctx, input }) => {
-      return await ctx.db.category.create({
+      const result = await ctx.db.category.create({
         data: {
           userId: ctx.session.user.id,
           ...input,
         },
       });
+
+      // Invalidate categories cache
+      invalidateUserCache(ctx.session.user.id, ["categories.getCategories"]);
+
+      return result;
     }),
   deleteCategory: protectedProcedure
     .input(
@@ -36,7 +47,7 @@ export const categoriesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      return await ctx.db.category.delete({
+      const result = await ctx.db.category.delete({
         where: {
           userId_name_type: {
             userId: ctx.session.user.id,
@@ -45,5 +56,10 @@ export const categoriesRouter = createTRPCRouter({
           },
         },
       });
+
+      // Invalidate categories cache
+      invalidateUserCache(ctx.session.user.id, ["categories.getCategories"]);
+
+      return result;
     }),
 });

@@ -1,29 +1,36 @@
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  userCacheMiddleware,
+  invalidateUserCache,
+} from "../trpc";
 import { z } from "zod";
 
 export const userRouter = createTRPCRouter({
-  getUserSettings: protectedProcedure.query(async ({ ctx }) => {
-    const user = await ctx.db.userSettings.findFirst({
-      where: {
-        userId: ctx.session.user.id,
-      },
-    });
-
-    if (!user) {
-      const newUserSettings = await ctx.db.userSettings.create({
-        data: {
+  getUserSettings: protectedProcedure
+    .use(userCacheMiddleware)
+    .query(async ({ ctx }) => {
+      const user = await ctx.db.userSettings.findFirst({
+        where: {
           userId: ctx.session.user.id,
-          currency: "USD",
         },
       });
-      return newUserSettings;
-    }
-    return user;
-  }),
+
+      if (!user) {
+        const newUserSettings = await ctx.db.userSettings.create({
+          data: {
+            userId: ctx.session.user.id,
+            currency: "USD",
+          },
+        });
+        return newUserSettings;
+      }
+      return user;
+    }),
   updateUserSettings: protectedProcedure
     .input(z.object({ id: z.string(), currency: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return await ctx.db.userSettings.update({
+      const result = await ctx.db.userSettings.update({
         where: {
           id: input.id,
         },
@@ -31,9 +38,14 @@ export const userRouter = createTRPCRouter({
           currency: input.currency,
         },
       });
+
+      // Invalidate user settings cache
+      invalidateUserCache(ctx.session.user.id, ["user.getUserSettings"]);
+
+      return result;
     }),
   setUserSettingsDone: protectedProcedure.mutation(async ({ ctx }) => {
-    return await ctx.db.user.update({
+    const result = await ctx.db.user.update({
       where: {
         id: ctx.session.user.id,
       },
@@ -41,5 +53,10 @@ export const userRouter = createTRPCRouter({
         isNewUser: false,
       },
     });
+
+    // Invalidate user session cache since isNewUser changed
+    invalidateUserCache(ctx.session.user.id, ["auth.getSession"]);
+
+    return result;
   }),
 });

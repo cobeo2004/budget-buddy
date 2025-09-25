@@ -1,5 +1,5 @@
+import "server-only";
 import UntypedEventEmitter, { on as onUntyped } from "node:events";
-
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default class EventEmitter<Events extends Record<string, any[]>> {
@@ -7,41 +7,50 @@ export default class EventEmitter<Events extends Record<string, any[]>> {
 
   addListener<E extends keyof Events>(
     event: E,
-    listener: (...args: Events[E]) => void
+    listener: (...args: Events[E]) => void,
   ): this {
-    this.emitter.addListener(event as string, listener);
+    this.emitter.addListener(
+      event as string,
+      listener as (...args: unknown[]) => void,
+    );
     return this;
   }
 
   on<E extends keyof Events>(
     event: E,
-    listener: (...args: Events[E]) => void
+    listener: (...args: Events[E]) => void,
   ): this {
-    this.emitter.on(event as string, listener);
+    this.emitter.on(event as string, listener as (...args: unknown[]) => void);
     return this;
   }
 
   once<E extends keyof Events>(
     event: E,
-    listener: (...args: Events[E]) => void
+    listener: (...args: Events[E]) => void,
   ): this {
-    this.emitter.once(event as string, listener);
+    this.emitter.once(
+      event as string,
+      listener as (...args: unknown[]) => void,
+    );
     return this;
   }
 
   removeListener<E extends keyof Events>(
     event: E,
-    listener: (...args: Events[E]) => void
+    listener: (...args: Events[E]) => void,
   ): this {
-    this.emitter.removeListener(event as string, listener);
+    this.emitter.removeListener(
+      event as string,
+      listener as (...args: unknown[]) => void,
+    );
     return this;
   }
 
   off<E extends keyof Events>(
     event: E,
-    listener: (...args: Events[E]) => void
+    listener: (...args: Events[E]) => void,
   ): this {
-    this.emitter.off(event as string, listener);
+    this.emitter.off(event as string, listener as (...args: unknown[]) => void);
     return this;
   }
 
@@ -60,7 +69,7 @@ export default class EventEmitter<Events extends Record<string, any[]>> {
   }
 
   listeners<E extends keyof Events>(
-    event: E
+    event: E,
   ): Array<(...args: Events[E]) => void> {
     return this.emitter.listeners(event as string) as Array<
       (...args: Events[E]) => void
@@ -68,7 +77,7 @@ export default class EventEmitter<Events extends Record<string, any[]>> {
   }
 
   rawListeners<E extends keyof Events>(
-    event: E
+    event: E,
   ): Array<(...args: Events[E]) => void> {
     return this.emitter.rawListeners(event as string) as Array<
       (...args: Events[E]) => void
@@ -85,17 +94,23 @@ export default class EventEmitter<Events extends Record<string, any[]>> {
 
   prependListener<E extends keyof Events>(
     event: E,
-    listener: (...args: Events[E]) => void
+    listener: (...args: Events[E]) => void,
   ): this {
-    this.emitter.prependListener(event as string, listener);
+    this.emitter.prependListener(
+      event as string,
+      listener as (...args: unknown[]) => void,
+    );
     return this;
   }
 
   prependOnceListener<E extends keyof Events>(
     event: E,
-    listener: (...args: Events[E]) => void
+    listener: (...args: Events[E]) => void,
   ): this {
-    this.emitter.prependOnceListener(event as string, listener);
+    this.emitter.prependOnceListener(
+      event as string,
+      listener as (...args: unknown[]) => void,
+    );
     return this;
   }
 
@@ -108,8 +123,11 @@ export default class EventEmitter<Events extends Record<string, any[]>> {
 export function on<TEvents extends Record<string, any[]>>(
   emitter: EventEmitter<TEvents>,
   event: keyof TEvents,
-  options?: { signal?: AbortSignal | undefined }
+  options?: { signal?: AbortSignal | undefined },
 ): AsyncIterableIterator<TEvents[keyof TEvents]> {
-  return onUntyped(emitter as UntypedEventEmitter, event as string, options) as AsyncIterableIterator<TEvents[keyof TEvents]>;
+  return onUntyped(
+    emitter as UntypedEventEmitter,
+    event as string,
+    options,
+  ) as AsyncIterableIterator<TEvents[keyof TEvents]>;
 }
-

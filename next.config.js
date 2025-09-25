@@ -14,6 +14,18 @@ const config = {
     typedEnv: true,
     reactCompiler: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "discord.com",
+      },
+    ],
+  },
 };
 
 export default config;

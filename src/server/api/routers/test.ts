@@ -1,5 +1,10 @@
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import {
+  createTRPCRouter,
+  devTestProcedure,
+  protectedProcedure,
+  userCacheMiddleware,
+} from "../trpc";
 
 export const testRouter = createTRPCRouter({
   onSubscribe: protectedProcedure.subscription(async function* () {
@@ -22,4 +27,13 @@ export const testRouter = createTRPCRouter({
       console.log(">>> User has unsubscribed");
     }
   }),
+  withoutCache: devTestProcedure.query(async ({ ctx }) => {
+    return await ctx.db.user.findMany();
+  }),
+
+  withCache: devTestProcedure
+    .use(userCacheMiddleware)
+    .query(async ({ ctx }) => {
+      return await ctx.db.user.findMany();
+    }),
 });

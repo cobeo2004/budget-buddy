@@ -14,6 +14,11 @@ import { ZodError } from "zod";
 import { adapter, db } from "@/server/db";
 import { isomorphicGetSession } from "./utils/isomorphicGetSession";
 import { type TRPCPanelMeta } from "trpc-ui";
+import { globalCache, userCache } from "../../lib/cache";
+import {
+  type middlewareMarker,
+  type MiddlewareResult,
+} from "@trpc/server/unstable-core-do-not-import";
 /**
  * 1. CONTEXT
  *
@@ -118,6 +123,139 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   return result;
 });
 
+interface CacheConfig {
+  ttl?: number; // Time to live in seconds
+  userSpecific?: boolean;
+  globalCache?: boolean;
+  keyPrefix?: string;
+}
+
+// Create cache key based on path, input, and user context
+const createCacheKey = (
+  path: string,
+  input: unknown,
+  userId?: string,
+  config?: CacheConfig,
+): string => {
+  const inputString = input ? JSON.stringify(input) : "";
+  const prefix = config?.keyPrefix ?? "trpc";
+
+  if (config?.globalCache) {
+    return `${prefix}:global:${path}:${inputString}`;
+  }
+
+  if (config?.userSpecific && userId) {
+    return `${prefix}:user:${userId}:${path}:${inputString}`;
+  }
+
+  return `${prefix}:${path}:${inputString}`;
+};
+
+// Create a cache middleware with the given configuration
+export const createCacheMiddleware = (config: CacheConfig = {}) => {
+  return t.middleware(async (opts): Promise<MiddlewareResult<unknown>> => {
+    const { path, input, ctx, next } = opts;
+
+    // Determine which cache to use
+    const cache = config.globalCache ? globalCache : userCache;
+    const userId = ctx.session?.user.id;
+
+    // Create cache key
+    const cacheKey = createCacheKey(path, input, userId, config);
+
+    // Try to get from cache first
+    const cachedResult = cache.get(cacheKey);
+    if (cachedResult !== undefined) {
+      if (process.env.NODE_ENV === "development") {
+        console.log("Cache hit", { cacheKey, path });
+      }
+      return {
+        ok: true,
+        data: cachedResult,
+        marker: "middleware" as unknown as typeof middlewareMarker,
+      };
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("Cache miss", { cacheKey, path });
+    }
+
+    // If not in cache, execute the procedure
+    const result = await next();
+
+    // Cache the result if successful
+    if (result.ok) {
+      const ttl = config.ttl ?? (config.globalCache ? 600 : 180); // Default: 10min global, 3min user
+      cache.set(cacheKey, result.data, ttl);
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("Cache set", { cacheKey, path, ttl, result: result.data });
+      }
+    }
+
+    return result;
+  });
+};
+
+// Pre-configured middleware instances
+export const globalCacheMiddleware = createCacheMiddleware({
+  ttl: 600, // 10 minutes
+  globalCache: true,
+  userSpecific: false,
+});
+
+export const userCacheMiddleware = createCacheMiddleware({
+  ttl: 180, // 3 minutes
+  userSpecific: true,
+  globalCache: false,
+});
+
+export const shortCacheMiddleware = createCacheMiddleware({
+  ttl: 120, // 2 minutes
+  userSpecific: true,
+  globalCache: false,
+});
+
+export const longCacheMiddleware = createCacheMiddleware({
+  ttl: 1800, // 30 minutes
+  globalCache: true,
+  userSpecific: false,
+});
+
+// Cache invalidation utilities
+export const invalidateCacheByPattern = (pattern: string, isGlobal = false) => {
+  const cache = isGlobal ? globalCache : userCache;
+  const keys = cache.keys();
+
+  keys.forEach((key) => {
+    if (key.includes(pattern)) {
+      cache.del(key);
+    }
+  });
+};
+
+export const invalidateCacheByKey = (key: string, isGlobal = false) => {
+  const cache = isGlobal ? globalCache : userCache;
+  cache.del(key);
+};
+
+export const invalidateUserCache = (userId: string, patterns: string[]) => {
+  patterns.forEach((pattern) => {
+    invalidateCacheByPattern(`user:${userId}:${pattern}`, false);
+  });
+};
+
+export const invalidateGlobalCache = (patterns: string[]) => {
+  patterns.forEach((pattern) => {
+    invalidateCacheByPattern(`global:${pattern}`, true);
+  });
+};
+
+// Clear all caches
+export const clearAllCaches = () => {
+  globalCache.flushAll();
+  userCache.flushAll();
+};
 /**
  * Public (unauthenticated) procedure
  *
@@ -126,6 +264,18 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * are logged in.
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+export const devTestProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(({ next }) => {
+    if (process.env.NODE_ENV !== "development") {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: ">>> Dev test procedure is only available in development <<<",
+      });
+    }
+    return next();
+  });
 
 /**
  * Protected (authenticated) procedure

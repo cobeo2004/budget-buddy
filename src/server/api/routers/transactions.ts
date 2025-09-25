@@ -1,5 +1,10 @@
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  shortCacheMiddleware,
+  invalidateUserCache,
+} from "../trpc";
 import { createTransactionSchema } from "@/features/dashboard/utils/schema";
 import { z } from "zod";
 import { GetFormatterForCurrency } from "@/features/dashboard/utils/helpers";
@@ -22,7 +27,7 @@ export const transactionsRouter = createTRPCRouter({
         });
       }
 
-      return await ctx.db.$transaction([
+      const result = await ctx.db.$transaction([
         // Create user transaction
         ctx.db.transaction.create({
           data: {
@@ -87,8 +92,20 @@ export const transactionsRouter = createTRPCRouter({
           },
         }),
       ]);
+
+      // Invalidate related caches
+      invalidateUserCache(ctx.session.user.id, [
+        "transactions.getTransactionsHistory",
+        "stats.getOverview",
+        "stats.getCategoriesStats",
+        "stats.getHistoryPeriods",
+        "stats.getHistoryData",
+      ]);
+
+      return result;
     }),
   getTransactionsHistory: protectedProcedure
+    .use(shortCacheMiddleware)
     .input(
       z.object({
         from: z.date(),
@@ -152,7 +169,7 @@ export const transactionsRouter = createTRPCRouter({
         });
       }
 
-      return await ctx.db.$transaction([
+      const result = await ctx.db.$transaction([
         // Delete transaction
         ctx.db.transaction.delete({
           where: {
@@ -198,5 +215,16 @@ export const transactionsRouter = createTRPCRouter({
           },
         }),
       ]);
+
+      // Invalidate related caches
+      invalidateUserCache(ctx.session.user.id, [
+        "transactions.getTransactionsHistory",
+        "stats.getOverview",
+        "stats.getCategoriesStats",
+        "stats.getHistoryPeriods",
+        "stats.getHistoryData",
+      ]);
+
+      return result;
     }),
 });

@@ -30,7 +30,6 @@ export function UserButton() {
   const handleOpenEditUserModal = () => {
     setIsOpen((prev) => !prev);
   };
-
   return (
     <>
       <DropdownMenu>

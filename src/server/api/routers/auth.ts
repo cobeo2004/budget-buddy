@@ -1,5 +1,11 @@
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+  shortCacheMiddleware,
+  invalidateUserCache,
+} from "../trpc";
 import { signUpSchema, updateUserSchema } from "@/features/auth/utils/schema";
 import * as jose from "jose";
 export const authRouter = createTRPCRouter({
@@ -8,20 +14,28 @@ export const authRouter = createTRPCRouter({
       message: "pong",
     };
   }),
-  getToken: protectedProcedure.query(({ ctx }) => {
+  getToken: protectedProcedure.use(shortCacheMiddleware).query(({ ctx }) => {
     return ctx.authToken;
   }),
-  getSession: protectedProcedure.query(({ ctx }) => {
+  getSession: protectedProcedure.use(shortCacheMiddleware).query(({ ctx }) => {
     return ctx.session;
   }),
   updateUser: protectedProcedure
     .input(updateUserSchema)
     .mutation(async ({ input, ctx }) => {
       const { name, email } = input;
-      return await ctx.db.user.update({
+      const result = await ctx.db.user.update({
         where: { id: ctx.session?.user?.id },
         data: { name, email },
       });
+
+      // Invalidate user-specific auth caches
+      invalidateUserCache(ctx.session.user.id, [
+        "auth.getSession",
+        "auth.getToken",
+      ]);
+
+      return result;
     }),
   signUp: publicProcedure
     .input(signUpSchema)

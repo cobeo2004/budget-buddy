@@ -20,7 +20,7 @@ const createContext = async (req: NextRequest) => {
 };
 
 const handler = async (req: NextRequest) => {
-  const { success, error } = await rateLimitByIp(10, 10000);
+  const { success, error } = await rateLimitByIp(50, 10000);
   if (!success) {
     return new Response(error, { status: 429 });
   }

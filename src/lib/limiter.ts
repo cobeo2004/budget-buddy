@@ -1,15 +1,13 @@
 import "server-only";
+import NodeCache from "node-cache";
 import { getIp } from "./get-ip";
 
-type LimterTracker = Record<
-  string,
-  {
-    count: number;
-    expiresAt: number;
-  }
->;
+type LimiterTracker = {
+  count: number;
+  expiresAt: number;
+};
 
-const trackers: LimterTracker = {};
+const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 
 export const rateLimitByIp = async (
   limit = 1,
@@ -27,18 +25,18 @@ export const rateLimitByKey = async (
   limit = 1,
   window = 10000,
 ): Promise<{ success: boolean; error?: string }> => {
-  const tracker = trackers[key] ?? { count: 0, expiresAt: 0 };
+  const tracker: LimiterTracker = cache.get(key) ?? { count: 0, expiresAt: 0 };
 
   console.log("[Middleware] Rate limiting tracker", tracker);
-  if (!trackers[key]) {
-    trackers[key] = tracker;
-  }
 
   if (tracker.expiresAt < Date.now()) {
     tracker.count = 0;
     tracker.expiresAt = Date.now() + window;
   }
   tracker.count++;
+
+  // Set the tracker in cache with TTL based on window
+  cache.set(key, tracker, Math.ceil(window / 1000));
 
   console.log("[Middleware] Rate limiting count for key", key, tracker.count);
 

@@ -1,3 +1,4 @@
+import "server-only";
 import type { Adapter, AdapterUser, AdapterSession } from "@auth/core/adapters";
 
 import NodeCache from "node-cache";

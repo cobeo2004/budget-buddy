@@ -2,6 +2,8 @@ import {
   createTRPCRouter,
   protectedProcedure,
   type createTRPCContext,
+  userCacheMiddleware,
+  shortCacheMiddleware,
 } from "../trpc";
 import { z } from "zod";
 import { getDaysInMonth } from "date-fns";
@@ -103,6 +105,7 @@ const getMonthHistoryData = async (
 
 export const statsRouter = createTRPCRouter({
   getOverview: protectedProcedure
+    .use(shortCacheMiddleware)
     .input(
       z.object({
         from: z.date(),
@@ -131,6 +134,7 @@ export const statsRouter = createTRPCRouter({
     }),
 
   getCategoriesStats: protectedProcedure
+    .use(shortCacheMiddleware)
     .input(
       z.object({
         from: z.date(),
@@ -159,28 +163,31 @@ export const statsRouter = createTRPCRouter({
       });
     }),
 
-  getHistoryPeriods: protectedProcedure.query(async ({ ctx }) => {
-    const result = await ctx.db.monthHistory.findMany({
-      where: {
-        userId: ctx.session.user.id,
-      },
-      select: {
-        year: true,
-      },
-      distinct: ["year"],
-      orderBy: [
-        {
-          year: "asc",
+  getHistoryPeriods: protectedProcedure
+    .use(userCacheMiddleware)
+    .query(async ({ ctx }) => {
+      const result = await ctx.db.monthHistory.findMany({
+        where: {
+          userId: ctx.session.user.id,
         },
-      ],
-    });
+        select: {
+          year: true,
+        },
+        distinct: ["year"],
+        orderBy: [
+          {
+            year: "asc",
+          },
+        ],
+      });
 
-    const years = result.map((r) => r.year);
-    if (years.length === 0) return [new Date().getFullYear()];
-    return years;
-  }),
+      const years = result.map((r) => r.year);
+      if (years.length === 0) return [new Date().getFullYear()];
+      return years;
+    }),
 
   getHistoryData: protectedProcedure
+    .use(userCacheMiddleware)
     .input(
       z.object({
         timeFrame: z.enum(["month", "year"]),

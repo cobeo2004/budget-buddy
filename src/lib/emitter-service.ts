@@ -1,12 +1,12 @@
+import "server-only";
 import EventEmitter from "./event-emitter";
-
 
 export interface IEventEmitterService<
   TEventName extends string,
   TFunction extends Array<unknown>,
   TEvent extends Record<TEventName, TFunction> = Record<TEventName, TFunction>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TEventEmitter extends EventEmitter<TEvent> = any
+  TEventEmitter extends EventEmitter<TEvent> = any,
 > {
   getEmitter(): TEventEmitter;
 }
@@ -14,7 +14,7 @@ export interface IEventEmitterService<
 export default class EventEmitterService<
   TEventName extends string,
   TFunction extends Array<unknown>,
-  TEvent extends Record<TEventName, TFunction> = Record<TEventName, TFunction>
+  TEvent extends Record<TEventName, TFunction> = Record<TEventName, TFunction>,
 > implements IEventEmitterService<TEventName, TFunction, TEvent>
 {
   private emitter: EventEmitter<TEvent> | undefined;

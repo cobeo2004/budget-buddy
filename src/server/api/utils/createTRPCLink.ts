@@ -2,8 +2,8 @@ import {
   loggerLink,
   retryLink,
   splitLink,
-  unstable_httpBatchStreamLink,
-  unstable_httpSubscriptionLink,
+  httpBatchStreamLink,
+  httpSubscriptionLink,
 } from "@trpc/client";
 import SuperJSON from "superjson";
 import { getBaseUrl } from "./getBaseUrl";
@@ -18,7 +18,7 @@ export const createTRPCLink = (authToken: string | null) => {
     }),
     splitLink({
       condition: (op) => op.type !== "subscription",
-      true: unstable_httpBatchStreamLink({
+      true: httpBatchStreamLink({
         transformer: SuperJSON,
         url: getBaseUrl() + "/api/trpc",
         headers: () => {
@@ -47,7 +47,7 @@ export const createTRPCLink = (authToken: string | null) => {
             return true;
           },
         }),
-        unstable_httpSubscriptionLink({
+        httpSubscriptionLink({
           url: getBaseUrl() + "/api/trpc",
           EventSource: EventSourcePolyfill,
           transformer: SuperJSON,
