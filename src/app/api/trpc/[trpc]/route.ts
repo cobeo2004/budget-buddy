@@ -5,6 +5,7 @@ import { env } from "@/env";
 import { appRouter } from "@/server/api/root";
 import { createTRPCContext } from "@/server/api/trpc";
 import { rateLimitByIp } from "@/lib/limiter";
+import { logger } from "@/lib/logger";
 
 type NextRuntime = "edge" | "nodejs";
 
@@ -33,7 +34,7 @@ const handler = async (req: NextRequest) => {
     onError:
       env.NODE_ENV === "development"
         ? ({ path, error }) => {
-            console.error(
+            logger.error(
               `❌ tRPC failed on ${path ?? "<no-path>"}: ${error.message}`,
             );
           }

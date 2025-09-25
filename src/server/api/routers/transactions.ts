@@ -8,6 +8,7 @@ import {
 import { createTransactionSchema } from "@/features/dashboard/utils/schema";
 import { z } from "zod";
 import { GetFormatterForCurrency } from "@/features/dashboard/utils/helpers";
+import { logger } from "@/lib/logger";
 
 export const transactionsRouter = createTRPCRouter({
   createTransaction: protectedProcedure
@@ -120,7 +121,7 @@ export const transactionsRouter = createTRPCRouter({
       const toUTC = new Date(
         Date.UTC(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59),
       );
-      console.log(">>>>>>", fromUTC, toUTC);
+      logger.info(">>>>>>", fromUTC, toUTC);
       const userSettings = await ctx.db.userSettings.findFirst({
         where: {
           userId: ctx.session.user.id,

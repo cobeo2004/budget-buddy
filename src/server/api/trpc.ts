@@ -19,6 +19,7 @@ import {
   type middlewareMarker,
   type MiddlewareResult,
 } from "@trpc/server/unstable-core-do-not-import";
+import { logger } from "@/lib/logger";
 /**
  * 1. CONTEXT
  *
@@ -34,7 +35,7 @@ import {
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const headers = opts.headers;
   const token = headers.get("Authorization") ?? null;
-  console.log(">>> TRPC Request from", headers.get("x-trpc-source"));
+  logger.info(">>> TRPC Request from", headers.get("x-trpc-source"));
   const session = await isomorphicGetSession(headers);
   return {
     db,
@@ -118,7 +119,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   const result = await next();
 
   const end = Date.now();
-  console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
+  logger.info(`[TRPC] ${path} took ${end - start}ms to execute`);
 
   return result;
 });
@@ -167,7 +168,7 @@ export const createCacheMiddleware = (config: CacheConfig = {}) => {
     const cachedResult = cache.get(cacheKey);
     if (cachedResult !== undefined) {
       if (process.env.NODE_ENV === "development") {
-        console.log("Cache hit", { cacheKey, path });
+        logger.info("Cache hit", { cacheKey, path });
       }
       return {
         ok: true,
@@ -177,7 +178,7 @@ export const createCacheMiddleware = (config: CacheConfig = {}) => {
     }
 
     if (process.env.NODE_ENV === "development") {
-      console.log("Cache miss", { cacheKey, path });
+      logger.info("Cache miss", { cacheKey, path });
     }
 
     // If not in cache, execute the procedure
@@ -189,7 +190,7 @@ export const createCacheMiddleware = (config: CacheConfig = {}) => {
       cache.set(cacheKey, result.data, ttl);
 
       if (process.env.NODE_ENV === "development") {
-        console.log("Cache set", { cacheKey, path, ttl, result: result.data });
+        logger.info("Cache set", { cacheKey, path, ttl, result: result.data });
       }
     }
 

@@ -41,6 +41,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { DateToUTCDate } from "../utils/helpers";
+import { logger } from "@/lib/logger";
 
 interface CreateTransactionDialogProps {
   triggerer: ReactNode;
@@ -202,7 +203,7 @@ export function CreateTransactionDialog({
                           mode="single"
                           selected={field.value}
                           onSelect={(value) => {
-                            console.log(value);
+                            logger.info(value);
                             if (!value) return;
                             field.onChange(value);
                           }}

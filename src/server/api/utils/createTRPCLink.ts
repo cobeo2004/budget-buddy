@@ -8,6 +8,7 @@ import {
 import SuperJSON from "superjson";
 import { getBaseUrl } from "./getBaseUrl";
 import { EventSourcePolyfill } from "event-source-polyfill";
+import { logger } from "@/lib/logger";
 
 export const createTRPCLink = (authToken: string | null) => {
   return [
@@ -37,7 +38,7 @@ export const createTRPCLink = (authToken: string | null) => {
             if (error && error.data instanceof Error) {
               const code = error.data.name;
               if (code === "UNAUTHORIZED" || code === "FORBIDDEN") {
-                console.error(
+                logger.error(
                   ">>> UNAUTHORIZED or FORBIDDEN for ",
                   opts.op.path,
                 );

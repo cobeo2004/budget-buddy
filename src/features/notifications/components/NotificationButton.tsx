@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { logger } from "@/lib/logger";
 
 function NotificationButton() {
   return (
@@ -32,7 +33,7 @@ function NotificationButton() {
             className="h-8 px-2 text-muted-foreground"
             onClick={() => {
               // Add clear notifications logic here
-              console.log("Clear all notifications");
+              logger.info("Clear all notifications");
             }}
           >
             <Trash2 className="mr-2 h-4 w-4" />

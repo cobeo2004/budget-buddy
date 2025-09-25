@@ -5,6 +5,7 @@ import {
   protectedProcedure,
   userCacheMiddleware,
 } from "../trpc";
+import { logger } from "@/lib/logger";
 
 export const testRouter = createTRPCRouter({
   onSubscribe: protectedProcedure.subscription(async function* () {
@@ -24,7 +25,7 @@ export const testRouter = createTRPCRouter({
         message: "Failed to subscribe with error: " + (error as Error).message,
       });
     } finally {
-      console.log(">>> User has unsubscribed");
+      logger.info(">>> User has unsubscribed");
     }
   }),
   withoutCache: devTestProcedure.query(async ({ ctx }) => {
