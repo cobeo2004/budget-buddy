@@ -1,14 +1,12 @@
 import "server-only";
-import NodeCache from "node-cache";
 import { getIp } from "./get-ip";
 import { logger } from "./logger";
+import { redis } from "./redis";
 
 type LimiterTracker = {
   count: number;
   expiresAt: number;
 };
-
-const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 
 export const rateLimitByIp = async (
   limit = 1,
@@ -26,7 +24,11 @@ export const rateLimitByKey = async (
   limit = 1,
   window = 10000,
 ): Promise<{ success: boolean; error?: string }> => {
-  const tracker: LimiterTracker = cache.get(key) ?? { count: 0, expiresAt: 0 };
+  const cacheKey = `rate_limit:${key}`;
+  const tracker: LimiterTracker = (await redis.get(cacheKey)) ?? {
+    count: 0,
+    expiresAt: 0,
+  };
 
   logger.info("[Middleware] Rate limiting tracker", tracker);
 
@@ -36,8 +38,8 @@ export const rateLimitByKey = async (
   }
   tracker.count++;
 
-  // Set the tracker in cache with TTL based on window
-  cache.set(key, tracker, Math.ceil(window / 1000));
+  // Set the tracker in Redis with TTL based on window
+  await redis.set(cacheKey, tracker, { ex: Math.ceil(window / 1000) });
 
   logger.info("[Middleware] Rate limiting count for key", key, tracker.count);
 

@@ -3,7 +3,8 @@ import {
   protectedProcedure,
   type createTRPCContext,
   userCacheMiddleware,
-  shortCacheMiddleware,
+  statsDateRangeCacheMiddleware,
+  statsHistoryCacheMiddleware,
 } from "../trpc";
 import { z } from "zod";
 import { getDaysInMonth } from "date-fns";
@@ -105,7 +106,7 @@ const getMonthHistoryData = async (
 
 export const statsRouter = createTRPCRouter({
   getOverview: protectedProcedure
-    .use(shortCacheMiddleware)
+    .use(statsDateRangeCacheMiddleware)
     .input(
       z.object({
         from: z.date(),
@@ -134,7 +135,7 @@ export const statsRouter = createTRPCRouter({
     }),
 
   getCategoriesStats: protectedProcedure
-    .use(shortCacheMiddleware)
+    .use(statsDateRangeCacheMiddleware)
     .input(
       z.object({
         from: z.date(),
@@ -187,7 +188,7 @@ export const statsRouter = createTRPCRouter({
     }),
 
   getHistoryData: protectedProcedure
-    .use(userCacheMiddleware)
+    .use(statsHistoryCacheMiddleware)
     .input(
       z.object({
         timeFrame: z.enum(["month", "year"]),

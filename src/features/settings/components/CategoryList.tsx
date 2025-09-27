@@ -17,7 +17,7 @@ type CategoryListProps = {
 };
 
 function CategoryList({ type }: CategoryListProps) {
-  const { isLoading, data, refetch } = api.categories.getCategories.useQuery({
+  const { isLoading, data } = api.categories.getCategoriesByType.useQuery({
     type,
   });
   const isDataAvailable = data && data.length > 0;
@@ -42,7 +42,9 @@ function CategoryList({ type }: CategoryListProps) {
             </div>
             <CreateCategoryDialog
               type={type}
-              onSuccess={() => refetch()}
+              onSuccess={() => {
+                // tRPC invalidation in CreateCategoryDialog handles cache refresh
+              }}
               trigger={
                 <Button className="gap-2 text-sm">
                   <PlusSquare className="h-4 w-4" />

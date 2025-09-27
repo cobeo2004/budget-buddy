@@ -24,7 +24,9 @@ interface CategoryPickerProps {
   onChange: (value: string) => void;
 }
 export const CategoryPicker = ({ type, onChange }: CategoryPickerProps) => {
-  const { data: categories } = api.categories.getCategories.useQuery({ type });
+  const { data: categories } = api.categories.getCategoriesByType.useQuery({
+    type,
+  });
   const [value, setValue] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 

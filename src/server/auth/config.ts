@@ -11,6 +11,7 @@ import { encode as defaultEncode } from "next-auth/jwt";
 import { skipCSRFCheck } from "@auth/core";
 import * as jose from "jose";
 import { v4 as uuid } from "uuid";
+import RedisCacheAdapter from "@/lib/redis-cache-adapter";
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
  * object and keep type safety.
@@ -98,7 +99,7 @@ export const authConfig: NextAuthConfig = {
         trustHost: true,
       }
     : {}),
-  adapter: adapter,
+  adapter: RedisCacheAdapter(adapter, { ttl: 60 * 5 }),
   callbacks: {
     session: ({ session, user }) => ({
       ...session,

@@ -1,7 +1,18 @@
+import "server-only";
+import ws from "ws";
+import { neonConfig } from "@neondatabase/serverless";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+
+neonConfig.webSocketConstructor = ws;
+
 const createPrismaClient = () => {
+  const adapter = new PrismaNeon({
+    connectionString: process.env.DATABASE_URL,
+  });
   return new PrismaClient({
+    adapter,
     log:
       process.env.NODE_ENV === "development"
         ? ["query", "error", "warn"]

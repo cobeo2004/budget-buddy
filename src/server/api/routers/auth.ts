@@ -30,7 +30,7 @@ export const authRouter = createTRPCRouter({
       });
 
       // Invalidate user-specific auth caches
-      invalidateUserCache(ctx.session.user.id, [
+      await invalidateUserCache(ctx.session.user.id, [
         "auth.getSession",
         "auth.getToken",
       ]);

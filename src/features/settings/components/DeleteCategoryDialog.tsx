@@ -33,7 +33,11 @@ function DeleteCategoryDialog({ trigger, category }: DeleteCateogoryDialog) {
     onSuccess: async () => {
       toast.dismiss();
       toast.success("Category deleted successfully 🥂");
-      await utils.categories.invalidate();
+      await Promise.all([
+        utils.categories.invalidate(),
+        utils.stats.getOverview.invalidate(), // Overview stats
+        utils.stats.getCategoriesStats.invalidate(), // Category stats
+      ]);
     },
     onError: () => {
       toast.dismiss();

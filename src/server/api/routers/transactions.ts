@@ -2,8 +2,9 @@ import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
   protectedProcedure,
-  shortCacheMiddleware,
   invalidateUserCache,
+  statsDateRangeCacheMiddleware,
+  invalidateCacheByPattern,
 } from "../trpc";
 import { createTransactionSchema } from "@/features/dashboard/utils/schema";
 import { z } from "zod";
@@ -94,19 +95,30 @@ export const transactionsRouter = createTRPCRouter({
         }),
       ]);
 
-      // Invalidate related caches
-      invalidateUserCache(ctx.session.user.id, [
-        "transactions.getTransactionsHistory",
-        "stats.getOverview",
-        "stats.getCategoriesStats",
-        "stats.getHistoryPeriods",
-        "stats.getHistoryData",
+      // Invalidate related caches - need to invalidate all period-based caches
+      // since we don't know which date ranges users might have cached
+      await Promise.all([
+        // Invalidate all user's transaction and stats caches
+        invalidateCacheByPattern(
+          `cache:user:${ctx.session.user.id}:transactions.getTransactionsHistory`,
+        ),
+        invalidateCacheByPattern(
+          `cache:user:${ctx.session.user.id}:stats.getOverview`,
+        ),
+        invalidateCacheByPattern(
+          `cache:user:${ctx.session.user.id}:stats.getCategoriesStats`,
+        ),
+        invalidateCacheByPattern(
+          `cache:user:${ctx.session.user.id}:stats.getHistoryData`,
+        ),
+        // Also invalidate the non-period based caches
+        invalidateUserCache(ctx.session.user.id, ["stats.getHistoryPeriods"]),
       ]);
 
       return result;
     }),
   getTransactionsHistory: protectedProcedure
-    .use(shortCacheMiddleware)
+    .use(statsDateRangeCacheMiddleware)
     .input(
       z.object({
         from: z.date(),
@@ -217,13 +229,24 @@ export const transactionsRouter = createTRPCRouter({
         }),
       ]);
 
-      // Invalidate related caches
-      invalidateUserCache(ctx.session.user.id, [
-        "transactions.getTransactionsHistory",
-        "stats.getOverview",
-        "stats.getCategoriesStats",
-        "stats.getHistoryPeriods",
-        "stats.getHistoryData",
+      // Invalidate related caches - need to invalidate all period-based caches
+      // since we don't know which date ranges users might have cached
+      await Promise.all([
+        // Invalidate all user's transaction and stats caches
+        invalidateCacheByPattern(
+          `cache:user:${ctx.session.user.id}:transactions.getTransactionsHistory`,
+        ),
+        invalidateCacheByPattern(
+          `cache:user:${ctx.session.user.id}:stats.getOverview`,
+        ),
+        invalidateCacheByPattern(
+          `cache:user:${ctx.session.user.id}:stats.getCategoriesStats`,
+        ),
+        invalidateCacheByPattern(
+          `cache:user:${ctx.session.user.id}:stats.getHistoryData`,
+        ),
+        // Also invalidate the non-period based caches
+        invalidateUserCache(ctx.session.user.id, ["stats.getHistoryPeriods"]),
       ]);
 
       return result;

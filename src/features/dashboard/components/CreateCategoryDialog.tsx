@@ -73,7 +73,13 @@ export function CreateCategoryDialog({
       toast.error("Failed to create category 😢");
     },
     onSuccess: async (data) => {
-      await utils.categories.getCategories.invalidate();
+      // Invalidate categories and stats caches
+      await Promise.all([
+        utils.categories.getCategories.invalidate(),
+        utils.categories.getCategoriesByType.invalidate(),
+        utils.stats.getOverview.invalidate(), // Overview stats
+        utils.stats.getCategoriesStats.invalidate(), // Category stats
+      ]);
       form.reset();
       toast.dismiss();
       toast.success("Category created 🎉");

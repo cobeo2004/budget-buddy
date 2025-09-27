@@ -14,12 +14,12 @@ import { ZodError } from "zod";
 import { adapter, db } from "@/server/db";
 import { isomorphicGetSession } from "./utils/isomorphicGetSession";
 import { type TRPCPanelMeta } from "trpc-ui";
-import { globalCache, userCache } from "../../lib/cache";
 import {
   type middlewareMarker,
   type MiddlewareResult,
 } from "@trpc/server/unstable-core-do-not-import";
 import { logger } from "@/lib/logger";
+import { redis } from "@/lib/redis";
 /**
  * 1. CONTEXT
  *
@@ -129,6 +129,7 @@ interface CacheConfig {
   userSpecific?: boolean;
   globalCache?: boolean;
   keyPrefix?: string;
+  keySuffix?: string;
 }
 
 // Create cache key based on path, input, and user context
@@ -139,17 +140,18 @@ const createCacheKey = (
   config?: CacheConfig,
 ): string => {
   const inputString = input ? JSON.stringify(input) : "";
-  const prefix = config?.keyPrefix ?? "trpc";
+  const prefix = config?.keyPrefix ?? "cache"; // Use unified "cache" prefix
+  const suffix = config?.keySuffix ? `:${config.keySuffix}` : "";
 
   if (config?.globalCache) {
-    return `${prefix}:global:${path}:${inputString}`;
+    return `${prefix}:global:${path}:${inputString}${suffix}`;
   }
 
   if (config?.userSpecific && userId) {
-    return `${prefix}:user:${userId}:${path}:${inputString}`;
+    return `${prefix}:user:${userId}:${path}:${inputString}${suffix}`;
   }
 
-  return `${prefix}:${path}:${inputString}`;
+  return `${prefix}:${path}:${inputString}${suffix}`;
 };
 
 // Create a cache middleware with the given configuration
@@ -157,44 +159,48 @@ export const createCacheMiddleware = (config: CacheConfig = {}) => {
   return t.middleware(async (opts): Promise<MiddlewareResult<unknown>> => {
     const { path, input, ctx, next } = opts;
 
-    // Determine which cache to use
-    const cache = config.globalCache ? globalCache : userCache;
     const userId = ctx.session?.user.id;
 
     // Create cache key
     const cacheKey = createCacheKey(path, input, userId, config);
 
-    // Try to get from cache first
-    const cachedResult = cache.get(cacheKey);
-    if (cachedResult !== undefined) {
-      if (process.env.NODE_ENV === "development") {
-        logger.info("Cache hit", { cacheKey, path });
+    try {
+      // Try to get from Redis cache first
+      const cachedResult = await redis.get(cacheKey);
+      if (cachedResult !== null) {
+        if (process.env.NODE_ENV === "development") {
+          logger.info("Cache hit", { cacheKey, path });
+        }
+        return {
+          ok: true,
+          data: cachedResult,
+          marker: "middleware" as unknown as typeof middlewareMarker,
+        };
       }
-      return {
-        ok: true,
-        data: cachedResult,
-        marker: "middleware" as unknown as typeof middlewareMarker,
-      };
-    }
-
-    if (process.env.NODE_ENV === "development") {
-      logger.info("Cache miss", { cacheKey, path });
-    }
-
-    // If not in cache, execute the procedure
-    const result = await next();
-
-    // Cache the result if successful
-    if (result.ok) {
-      const ttl = config.ttl ?? (config.globalCache ? 600 : 180); // Default: 10min global, 3min user
-      cache.set(cacheKey, result.data, ttl);
 
       if (process.env.NODE_ENV === "development") {
-        logger.info("Cache set", { cacheKey, path, ttl, result: result.data });
+        logger.info("Cache miss", { cacheKey, path });
       }
-    }
 
-    return result;
+      // If not in cache, execute the procedure
+      const result = await next();
+
+      // Cache the result if successful
+      if (result.ok) {
+        const ttl = config.ttl ?? (config.globalCache ? 600 : 180); // Default: 10min global, 3min user
+        await redis.setex(cacheKey, ttl, JSON.stringify(result.data));
+
+        if (process.env.NODE_ENV === "development") {
+          logger.info("Cache set", { cacheKey, path, ttl });
+        }
+      }
+
+      return result;
+    } catch (error) {
+      // If Redis fails, continue without caching
+      logger.error("Redis cache error", { error, cacheKey, path });
+      return await next();
+    }
   });
 };
 
@@ -207,6 +213,162 @@ export const globalCacheMiddleware = createCacheMiddleware({
 
 export const userCacheMiddleware = createCacheMiddleware({
   ttl: 180, // 3 minutes
+  userSpecific: true,
+  globalCache: false,
+});
+
+// Dynamic cache middleware that includes input-based suffix
+export const createDynamicCacheMiddleware = (config: CacheConfig = {}) => {
+  return t.middleware(async (opts): Promise<MiddlewareResult<unknown>> => {
+    const { path, input, ctx, next } = opts;
+    const userId = ctx.session?.user.id;
+
+    // Create dynamic cache key with input-based suffix
+    const dynamicConfig = {
+      ...config,
+      keySuffix:
+        input && typeof input === "object" && "type" in input
+          ? (input as { type: string }).type
+          : undefined,
+    };
+
+    const cacheKey = createCacheKey(path, input, userId, dynamicConfig);
+
+    try {
+      // Try to get from Redis cache first
+      const cachedResult = await redis.get(cacheKey);
+      if (cachedResult !== null) {
+        if (process.env.NODE_ENV === "development") {
+          logger.info("Cache hit", { cacheKey, path });
+        }
+        return {
+          ok: true,
+          data: cachedResult,
+          marker: "middleware" as unknown as typeof middlewareMarker,
+        };
+      }
+
+      if (process.env.NODE_ENV === "development") {
+        logger.info("Cache miss", { cacheKey, path });
+      }
+
+      // If not in cache, execute the procedure
+      const result = await next();
+
+      // Cache the result if successful
+      if (result.ok) {
+        const ttl = config.ttl ?? (config.globalCache ? 600 : 180);
+        await redis.setex(cacheKey, ttl, JSON.stringify(result.data));
+
+        if (process.env.NODE_ENV === "development") {
+          logger.info("Cache set", { cacheKey, path, ttl });
+        }
+      }
+
+      return result;
+    } catch (error) {
+      // If Redis fails, continue without caching
+      logger.error("Redis cache error", { error, cacheKey, path });
+      return await next();
+    }
+  });
+};
+
+// Pre-configured dynamic cache middleware for user-specific data with type differentiation
+export const userCacheMiddlewareWithType = createDynamicCacheMiddleware({
+  ttl: 180, // 3 minutes
+  userSpecific: true,
+  globalCache: false,
+});
+
+// Period-based cache middleware for stats endpoints
+export const createPeriodCacheMiddleware = (config: CacheConfig = {}) => {
+  return t.middleware(async (opts): Promise<MiddlewareResult<unknown>> => {
+    const { path, input, ctx, next } = opts;
+    const userId = ctx.session?.user.id;
+
+    // Create period-specific cache key suffix
+    let periodSuffix = "";
+    if (input && typeof input === "object") {
+      // Handle date range inputs (from/to)
+      if ("from" in input && "to" in input) {
+        const from = input.from as Date;
+        const to = input.to as Date;
+        periodSuffix = `${from.toISOString().split("T")[0]}_to_${to.toISOString().split("T")[0]}`;
+      }
+      // Handle history period inputs (timeFrame, year, month)
+      else if ("timeFrame" in input && "year" in input) {
+        const timeFrame = input.timeFrame as string;
+        const year = input.year as number;
+        const month = "month" in input ? (input.month as number) : null;
+        periodSuffix =
+          month !== null
+            ? `${timeFrame}_${year}_${month}`
+            : `${timeFrame}_${year}`;
+      }
+    }
+
+    const dynamicConfig = {
+      ...config,
+      keySuffix: periodSuffix || config.keySuffix,
+    };
+
+    const cacheKey = createCacheKey(path, input, userId, dynamicConfig);
+
+    try {
+      // Try to get from Redis cache first
+      const cachedResult = await redis.get(cacheKey);
+      if (cachedResult !== null) {
+        if (process.env.NODE_ENV === "development") {
+          logger.info("Period cache hit", { cacheKey, path, periodSuffix });
+        }
+        return {
+          ok: true,
+          data: cachedResult,
+          marker: "middleware" as unknown as typeof middlewareMarker,
+        };
+      }
+
+      if (process.env.NODE_ENV === "development") {
+        logger.info("Period cache miss", { cacheKey, path, periodSuffix });
+      }
+
+      // If not in cache, execute the procedure
+      const result = await next();
+
+      // Cache the result if successful
+      if (result.ok) {
+        const ttl = config.ttl ?? 300; // Default: 5 minutes for period-based data
+        await redis.setex(cacheKey, ttl, JSON.stringify(result.data));
+
+        if (process.env.NODE_ENV === "development") {
+          logger.info("Period cache set", {
+            cacheKey,
+            path,
+            ttl,
+            periodSuffix,
+          });
+        }
+      }
+
+      return result;
+    } catch (error) {
+      // If Redis fails, continue without caching
+      logger.error("Redis period cache error", { error, cacheKey, path });
+      return await next();
+    }
+  });
+};
+
+// Pre-configured period cache middleware instances
+export const statsDateRangeCacheMiddleware = createPeriodCacheMiddleware({
+  ttl: 300, // 5 minutes - good balance for date range stats
+  userSpecific: true,
+  globalCache: false,
+});
+
+export const statsHistoryCacheMiddleware = createPeriodCacheMiddleware({
+  ttl: 600, // 10 minutes - history data changes less frequently
   userSpecific: true,
   globalCache: false,
 });
@@ -224,38 +386,116 @@ export const longCacheMiddleware = createCacheMiddleware({
 });
 
 // Cache invalidation utilities
-export const invalidateCacheByPattern = (pattern: string, isGlobal = false) => {
-  const cache = isGlobal ? globalCache : userCache;
-  const keys = cache.keys();
+export const invalidateCacheByPattern = async (pattern: string) => {
+  try {
+    // Get all keys matching the pattern
+    const searchPattern = `*${pattern}*`;
+    const keys = await redis.keys(searchPattern);
 
-  keys.forEach((key) => {
-    if (key.includes(pattern)) {
-      cache.del(key);
+    if (process.env.NODE_ENV === "development") {
+      logger.info("Cache invalidation search", {
+        pattern,
+        searchPattern,
+        keysFound: keys.length,
+        keys: keys.slice(0, 5), // Log first 5 keys for debugging
+      });
     }
-  });
+
+    if (keys.length > 0) {
+      await redis.del(...keys);
+      if (process.env.NODE_ENV === "development") {
+        logger.info("Cache invalidated by pattern", {
+          pattern,
+          keysCount: keys.length,
+        });
+      }
+    }
+  } catch (error) {
+    logger.error("Redis cache invalidation error", { error, pattern });
+  }
 };
 
-export const invalidateCacheByKey = (key: string, isGlobal = false) => {
-  const cache = isGlobal ? globalCache : userCache;
-  cache.del(key);
+export const invalidateCacheByKey = async (key: string) => {
+  try {
+    await redis.del(key);
+    if (process.env.NODE_ENV === "development") {
+      logger.info("Cache invalidated by key", { key });
+    }
+  } catch (error) {
+    logger.error("Redis cache invalidation error", { error, key });
+  }
 };
 
-export const invalidateUserCache = (userId: string, patterns: string[]) => {
-  patterns.forEach((pattern) => {
-    invalidateCacheByPattern(`user:${userId}:${pattern}`, false);
-  });
+export const invalidateUserCache = async (
+  userId: string,
+  patterns: string[],
+) => {
+  try {
+    const promises = patterns.map((pattern) =>
+      invalidateCacheByPattern(`user:${userId}:${pattern}`),
+    );
+    await Promise.all(promises);
+  } catch (error) {
+    logger.error("User cache invalidation error", { error, userId, patterns });
+  }
 };
 
-export const invalidateGlobalCache = (patterns: string[]) => {
-  patterns.forEach((pattern) => {
-    invalidateCacheByPattern(`global:${pattern}`, true);
-  });
+// Invalidate both tRPC and auth adapter caches for a user
+export const invalidateAllUserCaches = async (
+  userId: string,
+  sessionToken?: string,
+) => {
+  try {
+    const promises: Promise<void>[] = [
+      // Invalidate all tRPC user caches
+      invalidateCacheByPattern(`cache:user:${userId}`),
+    ];
+
+    // If sessionToken is provided, also invalidate auth adapter cache
+    if (sessionToken) {
+      promises.push(
+        invalidateCacheByKey(`cache:auth:getSessionAndUser:${sessionToken}`),
+      );
+    }
+
+    await Promise.all(promises);
+
+    if (process.env.NODE_ENV === "development") {
+      logger.info("All user caches invalidated", {
+        userId,
+        sessionToken: !!sessionToken,
+      });
+    }
+  } catch (error) {
+    logger.error("All user cache invalidation error", {
+      error,
+      userId,
+      sessionToken,
+    });
+  }
+};
+
+export const invalidateGlobalCache = async (patterns: string[]) => {
+  try {
+    const promises = patterns.map((pattern) =>
+      invalidateCacheByPattern(`global:${pattern}`),
+    );
+    await Promise.all(promises);
+  } catch (error) {
+    logger.error("Global cache invalidation error", { error, patterns });
+  }
 };
 
 // Clear all caches
-export const clearAllCaches = () => {
-  globalCache.flushAll();
-  userCache.flushAll();
+export const clearAllCaches = async () => {
+  try {
+    await redis.flushall();
+    if (process.env.NODE_ENV === "development") {
+      logger.info("All caches cleared");
+    }
+  } catch (error) {
+    logger.error("Clear all caches error", { error });
+  }
 };
 /**
  * Public (unauthenticated) procedure

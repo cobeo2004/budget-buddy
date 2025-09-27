@@ -1,18 +1,17 @@
 import "server-only";
 import type { Adapter, AdapterUser, AdapterSession } from "@auth/core/adapters";
 
-import NodeCache from "node-cache";
+import { redis } from "./redis";
 
-export default function NodeCacheAdapter(
+export default function RedisCacheAdapter(
   dbAdapter: Adapter,
   options?: { ttl?: number },
 ): Adapter {
   const adapter = dbAdapter;
   const stdTTL = options?.ttl ?? 60 * 60; // 60min cache
-  const cache = new NodeCache({ stdTTL, checkperiod: stdTTL + 2 });
 
   const getSessionAndUserCacheKey = (sessionToken: string) =>
-    `nca:getSessionAndUser:${sessionToken}`;
+    `cache:auth:getSessionAndUser:${sessionToken}`;
 
   return {
     createUser: (data) => {
@@ -41,16 +40,18 @@ export default function NodeCacheAdapter(
     },
     async getSessionAndUser(sessionToken) {
       const cacheKey = getSessionAndUserCacheKey(sessionToken);
-      const cached: { user: AdapterUser; session: AdapterSession } | undefined =
-        cache.get(cacheKey);
+      const cached = await redis.get<{
+        user: AdapterUser;
+        session: AdapterSession;
+      }>(cacheKey);
       let userAndSession: {
         user: AdapterUser;
         session: AdapterSession;
       } | null = null;
-      if (cached === undefined) {
+      if (cached === null) {
         const toCache = await adapter.getSessionAndUser!(sessionToken);
         if (toCache) {
-          cache.set(cacheKey, toCache);
+          await redis.setex(cacheKey, stdTTL, toCache);
         }
         userAndSession = toCache;
       } else {
@@ -71,28 +72,28 @@ export default function NodeCacheAdapter(
       const result = adapter.updateSession!(data);
 
       if (result instanceof Promise) {
-        await result.then(() => {
-          cache.del(cacheKey);
+        await result.then(async () => {
+          await redis.del(cacheKey);
         });
       } else {
-        cache.del(cacheKey);
+        await redis.del(cacheKey);
       }
 
       return result;
     },
-    deleteSession: (sessionToken) => {
+    deleteSession: async (sessionToken) => {
       const cacheKey = getSessionAndUserCacheKey(sessionToken);
       const result = adapter.deleteSession!(sessionToken);
 
       if (result instanceof Promise) {
-        void result.then(() => {
-          cache.del(cacheKey);
+        void result.then(async () => {
+          await redis.del(cacheKey);
         });
       } else {
-        cache.del(cacheKey);
+        await redis.del(cacheKey);
       }
 
-      return result;
+      return result as AdapterSession;
     },
     async createVerificationToken(data) {
       return adapter.createVerificationToken!(data);

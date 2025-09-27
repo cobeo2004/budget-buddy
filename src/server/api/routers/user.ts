@@ -3,6 +3,7 @@ import {
   protectedProcedure,
   userCacheMiddleware,
   invalidateUserCache,
+  invalidateAllUserCaches,
 } from "../trpc";
 import { z } from "zod";
 
@@ -39,8 +40,18 @@ export const userRouter = createTRPCRouter({
         },
       });
 
-      // Invalidate user settings cache
-      invalidateUserCache(ctx.session.user.id, ["user.getUserSettings"]);
+      // Invalidate user settings cache and currency-dependent caches
+      await Promise.all([
+        invalidateUserCache(ctx.session.user.id, [
+          "user.getUserSettings",
+          "transactions.getTransactionsHistory", // Currency affects formatted amounts
+        ]),
+        // Also invalidate auth caches since user data changed
+        invalidateAllUserCaches(
+          ctx.session.user.id,
+          ctx.authToken ?? undefined,
+        ),
+      ]);
 
       return result;
     }),
@@ -55,7 +66,11 @@ export const userRouter = createTRPCRouter({
     });
 
     // Invalidate user session cache since isNewUser changed
-    invalidateUserCache(ctx.session.user.id, ["auth.getSession"]);
+    await Promise.all([
+      invalidateUserCache(ctx.session.user.id, ["auth.getSession"]),
+      // Also invalidate auth caches since user data changed
+      invalidateAllUserCaches(ctx.session.user.id, ctx.authToken ?? undefined),
+    ]);
 
     return result;
   }),

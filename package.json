@@ -31,6 +31,8 @@
     "@emoji-mart/react": "^1.1.1",
     "@hookform/resolvers": "^3.10.0",
     "@legendapp/state": "^3.0.0-beta.23",
+    "@neondatabase/serverless": "^1.0.1",
+    "@prisma/adapter-neon": "^6.16.2",
     "@prisma/client": "^6.16.2",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.4",
@@ -67,6 +69,7 @@
     "@trpc/client": "^11.6.0",
     "@trpc/react-query": "^11.6.0",
     "@trpc/server": "^11.6.0",
+    "@upstash/redis": "^1.35.4",
     "babel-plugin-react-compiler": "^19.0.0-beta-e552027-20250112",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.1",
@@ -105,6 +108,7 @@
     "trpc-ui": "^1.0.12",
     "uuid": "^11.0.5",
     "vaul": "^1.1.2",
+    "ws": "^8.18.3",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -115,7 +119,7 @@
     "@types/node": "^20.14.10",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
-    "@types/ws": "^8.5.13",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.1.0",
     "@typescript-eslint/parser": "^8.1.0",
     "eslint": "^8.57.0",
